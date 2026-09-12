@@ -5,7 +5,7 @@ from detection.behavioral import predict as predict_behavioral
 from detection.spectral import predict_spectral
 from validation import decode_audio, AudioValidationError
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 
 @app.route('/detect', methods=['POST'])
 def detect():
