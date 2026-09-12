@@ -3,3 +3,4 @@ numpy>=1.26.4
 scipy>=1.17.1
 soundfile==0.12.1
 pandas==2.2.2
+scikit-learn>=1.9.1

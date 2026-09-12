@@ -1,7 +1,8 @@
 import base64
-import io
 
 from flask import Flask, request, jsonify
+
+from detection.behavioral import predict
 
 app = Flask(__name__)
 
@@ -17,9 +18,14 @@ def detect():
     except Exception:
         return jsonify({'error': 'Invalid base64 audio data'}), 400
 
-    # --- Placeholder logic ---
-    is_synthetic = False
-    confidence = 0.5
+    is_synthetic, confidence = predict(audio_bytes)
+
+    if is_synthetic is None:
+        # Not enough turn data to make a behavioral call — safe fallback
+        return jsonify({
+            'is_synthetic': False,
+            'confidence': 0.5,
+        })
 
     return jsonify({
         'is_synthetic': is_synthetic,
