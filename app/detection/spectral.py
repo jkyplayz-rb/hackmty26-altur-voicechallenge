@@ -102,3 +102,16 @@ def predict_spectral(audio_bytes):
     confidence = float(proba_synthetic if is_synthetic else (1.0 - proba_synthetic))
 
     return is_synthetic, confidence
+
+def _warmup():
+    try:
+        sr = 8000
+        noise = (np.random.randn(sr * 2, 2) * 0.1).astype(np.float32)
+        buf = io.BytesIO()
+        sf.write(buf, noise, sr, format='WAV', subtype='PCM_16')
+        extract_spectral_features_from_audio(buf.getvalue())
+    except Exception:
+        pass
+
+if _model is not None:
+    _warmup()
