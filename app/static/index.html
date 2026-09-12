@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f4ed">
+  <meta name="description" content="Una lectura de la voz y el ritmo de una llamada. Demo del detector de Altur para HackMTY 2026.">
+  <title>Altur · Laboratorio de voz</title>
+  <link rel="icon" href="./assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/claro.css">
+  <script src="./assets/audio-utils.js" defer></script>
+  <script src="./assets/claro.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#laboratorio">Ir al analizador</a>
+  <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4M5 15v5h14v-5"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 14v2m4-5v8m4-5v2"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 2M18 18A8 8 0 0 1 5 16"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9S4 17 4 12V6l8-3Z"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 24 24"><path d="M4 10v4m4-7v10m4-14v18m4-14v10m4-7v4"/></symbol>
+  </svg>
+
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Altur, inicio">
+        <svg class="brand-mark" viewBox="0 0 38 38" aria-hidden="true"><path d="M5 21v-4m7 12V9m7 25V4m7 22V12m7 9v-4"/></svg>
+        <span>altur<span class="brand-dot">.</span></span>
+        <span class="brand-divider"></span><span class="brand-caption">Laboratorio<br>de voz</span>
+      </a>
+      <nav aria-label="Navegación principal">
+        <a href="#laboratorio" class="nav-current">Analizar llamada</a>
+        <a href="#metodo" aria-label="Cómo funciona">Cómo funciona <span aria-hidden="true">↗</span></a>
+      </nav>
+      <span class="event-tag">HackMTY <span>2026</span></span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow"><span class="tiny-rule"></span> ESCUCHAR ES SOLO EL PRINCIPIO</p>
+          <h1 id="page-title">La voz, <em>con contexto.</em></h1>
+          <p class="intro-copy">Cada conversación tiene un ritmo propio. Combinamos comportamiento<br class="desktop-break"> y señales acústicas para identificar quién está al otro lado.</p>
+        </div>
+        <div class="intro-note" aria-label="Dos perspectivas del análisis">
+          <span class="note-top">DOS PERSPECTIVAS, UNA LECTURA</span>
+          <div><span class="note-number">01</span><span>Cómo responde</span><span class="note-line"></span></div>
+          <div><span class="note-number">02</span><span>Cómo suena</span><svg class="icon"><use href="#i-signal"/></svg></div>
+        </div>
+      </section>
+
+      <div class="workspace-heading" id="laboratorio">
+        <div><span class="section-dot"></span><h2>Analizador de llamadas</h2></div>
+        <button class="connection" id="connection" type="button" title="Comprobar acceso a /health">
+          <span class="status-dot" aria-hidden="true"></span><span id="connection-text">Comprobando API</span>
+          <svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>
+        </button>
+      </div>
+
+      <p class="notice" id="environment-notice" role="status" hidden></p>
+      <noscript><p class="notice">Activa JavaScript para cargar y analizar una llamada.</p></noscript>
+
+      <div class="workspace">
+        <section class="audio-card card" aria-labelledby="audio-heading">
+          <div class="card-heading">
+            <h3 id="audio-heading"><span class="step-number">01</span> La llamada</h3>
+            <span class="format-tag">WAV <span>·</span> ESTÉREO</span>
+          </div>
+
+          <input type="file" id="file-input" accept=".wav,audio/wav,audio/x-wav,audio/wave" hidden>
+          <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Elegir un archivo WAV" aria-describedby="file-requirements">
+            <span class="upload-symbol"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg></span>
+            <div class="dropzone-title">Suelta aquí una conversación</div>
+            <p>o <span class="inline-link">elige un archivo de tu equipo <span aria-hidden="true">↗</span></span></p>
+            <span class="file-requirements" id="file-requirements">WAV · 8 kHz · 2 canales · Máx. 10 MiB</span>
+          </div>
+
+          <div class="selected-file" id="selected-file" hidden>
+            <span class="file-symbol"><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg></span>
+            <div class="file-name-group"><strong id="file-name"></strong><span id="file-description"></span></div>
+            <button class="text-button" id="change-file" type="button">Cambiar</button>
+            <button class="icon-button" id="remove-file" type="button" aria-label="Quitar archivo"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+          </div>
+
+          <div class="file-error notice" id="file-error" role="alert" hidden></div>
+
+          <div class="signal-heading"><span>LOS DOS LADOS DE LA CONVERSACIÓN</span><span id="signal-source">Sin archivo</span></div>
+          <div class="waveforms" id="waveforms">
+            <div class="waveform-row">
+              <div class="channel-label"><span class="channel-dot caller"></span><strong>Interlocutor</strong><span>CANAL 0</span></div>
+              <div class="waveform-track"><canvas id="caller-wave" aria-label="Forma de onda del interlocutor"></canvas><span class="waveform-placeholder" aria-hidden="true">La señal aparecerá aquí</span></div>
+            </div>
+            <div class="waveform-row">
+              <div class="channel-label"><span class="channel-dot agent"></span><strong>Agente del banco</strong><span>CANAL 1</span></div>
+              <div class="waveform-track"><canvas id="agent-wave" aria-label="Forma de onda del agente del banco"></canvas><span class="waveform-placeholder" aria-hidden="true">La señal aparecerá aquí</span></div>
+            </div>
+          </div>
+          <div class="player">
+            <audio id="audio-player" preload="metadata"></audio>
+            <button class="play-button" id="play-button" type="button" disabled aria-label="Reproducir llamada"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg></button>
+            <span class="player-time" id="current-time">0:00</span>
+            <input class="seek" id="seek" type="range" min="0" max="1000" value="0" step="1" disabled aria-label="Posición de reproducción" aria-valuetext="Sin audio">
+            <span class="player-time" id="total-time">0:00</span>
+            <span class="player-format" id="player-format">8 kHz</span>
+          </div>
+          <p class="player-notice" id="player-notice" role="status" hidden></p>
+
+          <div class="analysis-actions">
+            <div class="upload-privacy"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span>El audio se envía al servidor<br>solo al iniciar el análisis.</span></div>
+            <button class="primary-button" id="analyze-button" type="button" disabled><span id="analyze-label">Analizar llamada</span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+          </div>
+        </section>
+
+        <section class="result-card card" id="result-card" aria-labelledby="result-heading" aria-busy="false">
+          <div class="card-heading"><h3 id="result-heading"><span class="step-number">02</span> La lectura</h3><span class="result-badge" id="result-badge">En espera</span></div>
+          <div class="result-body" id="result-body" aria-live="polite" aria-atomic="true">
+            <div class="result-symbol" id="result-symbol"><svg class="icon" aria-hidden="true"><use href="#i-signal"/></svg><span class="spinner" aria-hidden="true"></span></div>
+            <p class="result-eyebrow" id="result-eyebrow">EL OTRO LADO DE LA LÍNEA</p>
+            <h4 id="result-title">Una llamada.<br>Una nueva lectura.</h4>
+            <p class="result-description" id="result-description">Carga un audio para explorar las señales de una voz humana o sintética.</p>
+          </div>
+          <div class="confidence-block">
+            <div class="confidence-label"><span>Confianza reportada</span><strong id="confidence-value">—</strong></div>
+            <div class="confidence-meter" id="confidence-meter" aria-hidden="true" aria-label="Confianza reportada por el modelo" aria-valuemin="0" aria-valuemax="100"><span id="confidence-fill"></span></div>
+            <div class="confidence-ticks" aria-hidden="true"><span>0</span><span>50</span><span>100%</span></div>
+          </div>
+          <div class="response-time"><span>Tiempo total de consulta</span><span><strong id="request-time">—</strong><span id="time-unit"></span></span></div>
+          <p class="result-caveat" id="result-caveat">La puntuación del modelo no equivale a una probabilidad de acierto calibrada.</p>
+          <div id="result-details" class="result-details" hidden>
+            <details><summary>Ver respuesta del endpoint</summary><pre id="response-json"></pre></details>
+            <button class="text-button download-button" id="download-result" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Descargar resultado</button>
+          </div>
+        </section>
+      </div>
+
+      <section class="method" id="metodo" aria-labelledby="method-heading">
+        <div class="method-intro"><p class="eyebrow">DETRÁS DE LA LECTURA</p><h2 id="method-heading">No solo qué se oye.<br><em>También cómo sucede.</em></h2><p>Dos perspectivas complementarias sobre la misma conversación.</p></div>
+        <article class="method-item"><span class="method-number">01 / COMPORTAMIENTO</span><h3>El ritmo de responder.</h3><p>Los tiempos entre las intervenciones del agente y las respuestas del interlocutor aportan contexto a la detección.</p><span class="method-footnote">Señales temporales</span></article>
+        <article class="method-item"><span class="method-number">02 / ACÚSTICA</span><h3>La textura de la voz.</h3><p>Las características espectrales y de tono de la voz del interlocutor aportan una segunda perspectiva.</p><span class="method-footnote">Señales de la voz · Canal 0</span></article>
+      </section>
+    </main>
+
+    <footer class="site-footer"><span>Hecho para escuchar un poco más allá.</span><span>Demo experimental <span class="footer-separator">/</span> Altur Challenge · HackMTY 2026</span></footer>
+  </div>
+</body>
+</html>
