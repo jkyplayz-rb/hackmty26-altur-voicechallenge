@@ -4,3 +4,4 @@ scipy>=1.17.1
 soundfile==0.12.1
 pandas==2.2.2
 scikit-learn>=1.9.1requests==2.32.3
+librosa==1.0.0
