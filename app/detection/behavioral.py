@@ -3,6 +3,7 @@ import pickle
 import os
 
 import numpy as np
+import pandas as pd
 import soundfile as sf
 
 from .vad import detect_turns
@@ -72,7 +73,7 @@ def predict(audio_bytes):
     if feats is None:
         return None, None
 
-    X = [[feats[name] for name in _feature_names]]
+    X = pd.DataFrame([[feats[name] for name in _feature_names]], columns=_feature_names)
     proba = _model.predict_proba(X)[0]
     is_synthetic = bool(_model.predict(X)[0])
     confidence = float(proba[1] if is_synthetic else proba[0])
