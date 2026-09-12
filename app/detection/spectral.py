@@ -106,10 +106,16 @@ def predict_spectral(audio_bytes):
 def _warmup():
     try:
         sr = 8000
-        noise = (np.random.randn(sr * 2, 2) * 0.1).astype(np.float32)
-        buf = io.BytesIO()
-        sf.write(buf, noise, sr, format='WAV', subtype='PCM_16')
-        extract_spectral_features_from_audio(buf.getvalue())
+        dummy = (np.random.randn(sr * 2) * 0.5).astype(np.float32)
+        librosa.feature.mfcc(y=dummy, sr=sr, n_mfcc=13)
+        librosa.feature.spectral_centroid(y=dummy, sr=sr)
+        librosa.feature.spectral_flatness(y=dummy)
+        librosa.feature.spectral_rolloff(y=dummy, sr=sr, roll_percent=0.85)
+        librosa.stft(dummy)
+        librosa.feature.zero_crossing_rate(y=dummy)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            librosa.pyin(dummy, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C6'), sr=sr, fill_na=None)
     except Exception:
         pass
 
