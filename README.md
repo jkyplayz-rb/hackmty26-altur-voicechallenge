@@ -115,7 +115,9 @@ tests/
 ## Team
 
 - **Juan Carlos Livas Reyes (Juanky)** — backend, ML models, deployment
-- *[add remaining teammates' names and roles]*
+- **Erick Morales Najera** — frontend development
+- **Jose Luis Jasso Caballero** — pitch
+- **Juan Pablo De la Cruz Rangel** — original detection model concept and prototype
 
 ---
 
