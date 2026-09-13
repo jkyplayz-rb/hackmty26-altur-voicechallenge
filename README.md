@@ -1,41 +1,122 @@
-# Altur Challenge: HackMTY 2026
+# Altur Voice Deepfake Detector
 
-Recorded phone calls between a caller and a bank's AI customer-service agent, in Mexican Spanish.
-In some calls the caller is a real person. In others the caller is an autonomous AI: speech recognition, a language model and a synthetic voice, dialing the same number.
+Real-time detection of synthetic (AI-generated) voices on bank support calls, built for Altur's **"Defend the Bank Against Voice Deepfakes"** challenge at HackMTY 2026.
 
-Your task: given a call, decide whether the caller is human or synthetic.
+**Live demo:** http://155.138.208.163/
 
-## Files
+## The problem
 
-| Path | Contents |
-| --- | --- |
-| `manifest.csv` | One row per call: `anon_id`, `label` (`human` or `synthetic`), `split` (`train` or `val`), `duration_s`. |
-| `audio/<anon_id>.wav` | Stereo, 8 kHz, 16-bit PCM. Channel 0 is the caller (the one you classify). Channel 1 is the agent. |
-| `turns/<anon_id>.json` | Speech segments per channel, `{"turns": [{"channel": 0, "start": 12.4, "end": 15.1}, ...]}`, seconds from the start of the file. Derived automatically from the audio; use them as a starting point. |
+Voice deepfakes are becoming convincing enough to fool call center agents and automated phone banking systems, opening the door to account takeover, fraudulent transfers, and social engineering at scale. Existing authentication (PINs, security questions) doesn't verify that the *voice itself* is real — it can be phished or leaked independently. This project adds that missing layer: a drop-in API that flags whether the caller side of a recorded conversation is human or synthetic, in real time.
 
-Audio is distributed as `altur-challenge-audio.zip` (see Releases). Unzip it in the repo root so the files land in `audio/`.
+## Approach
 
-## The conversation
+Each call is a stereo WAV recording: channel 0 is the caller (interlocutor) being classified, channel 1 is the bank agent. Two independent models each score the caller's channel, and their scores are combined with equal weighting:
 
-Every call follows the same customer-service flow, whoever is calling. The agent asks callers to repeat information back,
-sometimes asks about things that do not exist, and there are moments where it interrupts, falls silent, or talks over the caller.
-Both sides are given to you for a reason: channel 1 tells you what the caller was reacting to.
+**Behavioral model** — analyzes conversational turn-taking timing between the caller and the agent. Synthetic voices tend to produce response-timing patterns that differ subtly but measurably from natural human conversation rhythm.
 
-## Splits
+**Spectral/acoustic model** — extracts pitch (via `librosa.pyin`), MFCCs, spectral centroid, spectral flatness, and spectral rolloff directly from the caller's audio, then classifies with a trained scikit-learn model.
 
-`train` and `val` are speaker-disjoint: no caller appears in both. Judging uses a hidden set of calls from callers and voices that appear in neither split.
+The two models' scores are averaged (50/50) into a single confidence value; if only one model produces a valid score (e.g. a channel is too short for reliable pitch tracking), that score is used alone.
 
-## Evaluation
+## Results
 
-Your system exposes `POST /detect`. It receives a stereo WAV clip (8 kHz, base64-encoded, channel 0 = caller, channel 1 = agent) and returns:
+| Model | Accuracy |
+|---|---|
+| Behavioral only | 93.0% |
+| Spectral only | 91.5% |
+| **Ensemble (both combined)** | **95.8%** |
+
+### Independent verification
+
+The 95.8% figure isn't just our own benchmark script — we ran the organizers' own official test client (`check_endpoint.py` from the `alturio/hackmty26` repo) directly against our live deployed server, using the exact request/response contract the real judging system uses:
+
+- Balanced accuracy: **0.958**
+- AUC: **0.998**
+- Brier score: 0.068
+- Mean latency: 2.75s per call, max 9.1s
+- 71/71 calls answered, 0 errors
+
+## API
+
+### `POST /detect`
+
+Request body:
 
 ```json
-{"is_synthetic": true, "confidence": 0.87}
+{
+  "audio": "<base64-encoded WAV, 8kHz, 2-channel (stereo)>"
+}
 ```
 
-`is_synthetic` is required. `confidence` is optional and used to break ties and reward calibration.
+Also accepts `audio_base64` or `wav_base64` as the key name, matching the exact contract used by the official judging system.
 
-## Terms
+Response:
 
-Human callers volunteered, were told the call was recorded for an AI test, and used invented personal data. Do not try to identify anyone.
-This dataset is provided for HackMTY 2026 only; do not redistribute.
+```json
+{
+  "is_synthetic": true,
+  "confidence": 0.86
+}
+```
+
+`is_synthetic` is always present. `confidence` (0.0–1.0) reflects how strongly the ensemble leans toward its answer.
+
+### `GET /health`
+
+```json
+{ "status": "ok" }
+```
+
+## Frontend
+
+A browser UI lives at `app/static/` — served directly by Flask, no build step or framework required. Drag in a WAV file to see:
+
+- A live waveform view of both channels (caller / agent)
+- The classification result with confidence score
+- Raw endpoint response (for debugging/transparency)
+- A downloadable JSON report of the analysis
+
+Covered by 36 unit tests (`node --test tests/frontend/`) validating WAV parsing, payload construction, and error handling — no npm install needed.
+
+## Running locally
+
+```bash
+pip install -r requirements.txt
+python3 app/main.py
+```
+
+The server listens on port 5000 by default. Visit `http://localhost:5000/` for the UI, or POST directly to `/detect`.
+
+**Note on cold starts:** the spectral model's first request after a fresh server start can take 20–30s, because `librosa`'s pitch-tracking functions are JIT-compiled by numba on first use. The server pre-warms these functions at startup (bypassing the normal audio pipeline to force compilation early), so real requests in production stay in the 1–3s range.
+
+## Deployment
+
+Currently deployed on a Vultr VPS running Gunicorn behind a 120s worker timeout (to comfortably clear the cold-start JIT compilation window on first boot). See `scripts/check_endpoint.py` for the exact client used to validate the live deployment end-to-end.
+
+## Project structure
+
+```
+app/
+  main.py                    # Flask app: /detect, /health, and static frontend routes
+  validation.py               # Audio decoding + request contract validation
+  detection/
+    behavioral.py             # Turn-taking timing model
+    spectral.py                # Acoustic/spectral model + startup warmup
+    spectral_model.pkl         # Trained spectral classifier
+  static/                     # Frontend (HTML/CSS/JS), no build step
+scripts/
+  train_spectral_model_v2.py   # Spectral model training pipeline
+  test_detect.py                # Local validation script
+  check_endpoint.py             # Official organizer test client
+tests/
+  frontend/                    # Frontend unit tests (node --test)
+```
+
+## Team
+
+- **Juan Carlos Livas Reyes (Juanky)** — backend, ML models, deployment
+- *[add remaining teammates' names and roles]*
+
+---
+
+Built for HackMTY 2026 / Altur Challenge.
