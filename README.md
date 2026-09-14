@@ -2,7 +2,7 @@
 
 Real-time detection of synthetic (AI-generated) voices on bank support calls, built for Altur's **"Defend the Bank Against Voice Deepfakes"** challenge at HackMTY 2026.
 
-**Live demo:** http://155.138.208.163/
+**Live demo:** No longer running — the server was taken down after HackMTY26 judging ended (Sept 13, 2026) to stop hosting costs. See "Running locally" below to run it yourself.
 
 ## The problem
 
@@ -91,7 +91,7 @@ The server listens on port 5000 by default. Visit `http://localhost:5000/` for t
 
 ## Deployment
 
-Currently deployed on a Vultr VPS running Gunicorn behind a 120s worker timeout (to comfortably clear the cold-start JIT compilation window on first boot). See `scripts/check_endpoint.py` for the exact client used to validate the live deployment end-to-end.
+During HackMTY26 judging this ran on a Vultr VPS with Gunicorn behind a 120s worker timeout (to comfortably clear the cold-start JIT compilation window on first boot). The instance has since been destroyed to stop hosting costs; the results above were captured while it was live. See `scripts/check_endpoint.py` for the exact client used to validate the live deployment end-to-end.
 
 ## Project structure
 
